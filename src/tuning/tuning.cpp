@@ -29,7 +29,7 @@
 #include <utility>
 #include <vector>
 
-#include "deps/nlohmann_json.hpp"
+#include "../../deps/nlohmann_json.hpp"
 #include "tuning/configurations.hpp"
 #include "utilities/backend.hpp"
 #include "utilities/clblast_exceptions.hpp"
