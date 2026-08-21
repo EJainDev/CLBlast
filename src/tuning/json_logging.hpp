@@ -9,7 +9,7 @@
 #include <utility>
 #include <vector>
 
-#include "deps/nlohmann_json.hpp"
+#include "../../deps/nlohmann_json.hpp"
 #include "tuning/tuning.hpp"
 #include "utilities/backend.hpp"
 #include "utilities/utilities.hpp"
