@@ -17,11 +17,14 @@
 #include <cstdio>
 #include <cstdlib>
 #include <functional>
+#include <iomanip>
+#include <ios>
 #include <mutex>
 #include <nlohmann/json.hpp>
 #include <nlohmann/json_fwd.hpp>
 #include <random>
 #include <ratio>
+#include <sstream>
 #include <stdexcept>
 #include <string>
 #include <string_view>
@@ -46,6 +49,58 @@ void print_separator(const size_t parameters_size) {
     printf("-----");
   }
   printf("-x-----------------x-----------------x----------------x--------------x--------x-------------------x\n");
+}
+
+void PrintTimingsToFileAsJSON(const std::string& filename, const Device& device, const Platform& platform,
+                              const std::vector<std::pair<std::string, std::string>>& metadata,
+                              const std::vector<TuningResult>& tuning_results) {
+  nlohmann::ordered_json json;
+
+  auto num_results = tuning_results.size();
+  printf("* Writing a total of %zu results to '%s'\n", num_results, filename.c_str());
+
+  auto file = fopen(filename.c_str(), "w");
+
+  for (auto& datum : metadata) {
+    json[datum.first.c_str()] = datum.second.c_str();
+  }
+  json["clblast_device_type"] = GetDeviceType(device).c_str();
+  json["clblast_device_vendor"] = GetDeviceVendor(device).c_str();
+  json["clblast_device_architecture"] = GetDeviceArchitecture(device).c_str();
+  json["clblast_device_name"] = GetDeviceName(device).c_str();
+  json["device"] = device.Name().c_str();
+  json["platform_vendor"] = platform.Vendor().c_str();
+  json["platform_version"] = platform.Version().c_str();
+  json["device_vendor"] = device.Vendor().c_str();
+  json["device_type"] = device.Type().c_str();
+  json["device_core_clock"] = device.CoreClock();
+  json["device_compute_units"] = device.ComputeUnits();
+  json["device_extra_info"] = device.GetExtraInfo().c_str();
+  json["results"] = nlohmann::json::array();
+
+  // Loops over all results
+  for (auto r = size_t{0}; r < num_results; ++r) {
+    auto result = tuning_results[r];
+    nlohmann::ordered_json result_json;
+
+    result_json["kernel"] = result.name.c_str();
+    std::ostringstream stream;
+    stream << std::fixed << std::setprecision(3) << result.score;
+    result_json["time"] = std::stod(stream.str());  // Add %.3lf
+
+    // Loops over all the parameters for this result
+    result_json["parameters"] = nlohmann::json::object();
+    for (const auto& parameter : result.config) {
+      result_json["parameters"][parameter.first.c_str()] = parameter.second;
+    }
+
+    json["results"].push_back(result_json);
+  }
+
+  auto json_dump = json.dump(2);
+
+  fprintf(file, "%s", json_dump.c_str());
+  fclose(file);
 }
 
 // =================================================================================================
