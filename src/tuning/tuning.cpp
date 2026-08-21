@@ -17,15 +17,19 @@
 #include <cstdio>
 #include <cstdlib>
 #include <functional>
+#include <iomanip>
+#include <ios>
 #include <mutex>
 #include <random>
 #include <ratio>
+#include <sstream>
 #include <stdexcept>
 #include <string>
 #include <thread>
 #include <utility>
 #include <vector>
 
+#include "deps/nlohmann_json.hpp"
 #include "tuning/configurations.hpp"
 #include "utilities/backend.hpp"
 #include "utilities/clblast_exceptions.hpp"
@@ -39,57 +43,52 @@ namespace clblast {
 void PrintTimingsToFileAsJSON(const std::string& filename, const Device& device, const Platform& platform,
                               const std::vector<std::pair<std::string, std::string>>& metadata,
                               const std::vector<TuningResult>& tuning_results) {
+  nlohmann::ordered_json json;
+
   auto num_results = tuning_results.size();
   printf("* Writing a total of %zu results to '%s'\n", num_results, filename.c_str());
 
   auto file = fopen(filename.c_str(), "w");
-  fprintf(file, "{\n");
+
   for (auto& datum : metadata) {
-    fprintf(file, "  \"%s\": \"%s\",\n", datum.first.c_str(), datum.second.c_str());
+    json[datum.first.c_str()] = datum.second.c_str();
   }
-  fprintf(file, "  \"clblast_device_type\": \"%s\",\n", GetDeviceType(device).c_str());
-  fprintf(file, "  \"clblast_device_vendor\": \"%s\",\n", GetDeviceVendor(device).c_str());
-  fprintf(file, "  \"clblast_device_architecture\": \"%s\",\n", GetDeviceArchitecture(device).c_str());
-  fprintf(file, "  \"clblast_device_name\": \"%s\",\n", GetDeviceName(device).c_str());
-  fprintf(file, "  \"device\": \"%s\",\n", device.Name().c_str());
-  fprintf(file, "  \"platform_vendor\": \"%s\",\n", platform.Vendor().c_str());
-  fprintf(file, "  \"platform_version\": \"%s\",\n", platform.Version().c_str());
-  fprintf(file, "  \"device_vendor\": \"%s\",\n", device.Vendor().c_str());
-  fprintf(file, "  \"device_type\": \"%s\",\n", device.Type().c_str());
-  fprintf(file, "  \"device_core_clock\": \"%zu\",\n", device.CoreClock());
-  fprintf(file, "  \"device_compute_units\": \"%zu\",\n", device.ComputeUnits());
-  fprintf(file, "  \"device_extra_info\": \"%s\",\n", device.GetExtraInfo().c_str());
-  fprintf(file, "  \"results\": [\n");
+  json["clblast_device_type"] = GetDeviceType(device).c_str();
+  json["clblast_device_vendor"] = GetDeviceVendor(device).c_str();
+  json["clblast_device_architecture"] = GetDeviceArchitecture(device).c_str();
+  json["clblast_device_name"] = GetDeviceName(device).c_str();
+  json["device"] = device.Name().c_str();
+  json["platform_vendor"] = platform.Vendor().c_str();
+  json["platform_version"] = platform.Version().c_str();
+  json["device_vendor"] = device.Vendor().c_str();
+  json["device_type"] = device.Type().c_str();
+  json["device_core_clock"] = device.CoreClock();
+  json["device_compute_units"] = device.ComputeUnits();
+  json["device_extra_info"] = device.GetExtraInfo().c_str();
+  json["results"] = nlohmann::json::array();
 
   // Loops over all results
   for (auto r = size_t{0}; r < num_results; ++r) {
     auto result = tuning_results[r];
-    fprintf(file, "    {\n");
-    fprintf(file, "      \"kernel\": \"%s\",\n", result.name.c_str());
-    fprintf(file, "      \"time\": %.3lf,\n", result.score);
+    nlohmann::ordered_json result_json;
+
+    result_json["kernel"] = result.name.c_str();
+    std::ostringstream stream;
+    stream << std::fixed << std::setprecision(3) << result.score;
+    result_json["time"] = std::stod(stream.str());  // Add %.3lf
 
     // Loops over all the parameters for this result
-    fprintf(file, "      \"parameters\": {");
-    auto num_configs = result.config.size();
-    auto p = size_t{0};
+    result_json["parameters"] = nlohmann::json::object();
     for (const auto& parameter : result.config) {
-      fprintf(file, "\"%s\": %zu", parameter.first.c_str(), parameter.second);
-      if (p < num_configs - 1) {
-        fprintf(file, ",");
-      }
-      ++p;
+      result_json["parameters"][parameter.first.c_str()] = parameter.second;
     }
-    fprintf(file, "}\n");
 
-    // The footer
-    fprintf(file, "    }");
-    if (r < num_results - 1) {
-      fprintf(file, ",");
-    }
-    fprintf(file, "\n");
+    json["results"].push_back(result_json);
   }
-  fprintf(file, "  ]\n");
-  fprintf(file, "}\n");
+
+  auto json_dump = json.dump(2);
+
+  fprintf(file, "%s", json_dump.c_str());
   fclose(file);
 }
 

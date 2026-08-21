@@ -1,1 +1,2 @@
 ./src/database/kernels/*/*.hpp
+./deps/nlohmann_json.hpp
