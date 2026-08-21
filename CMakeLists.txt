@@ -261,7 +261,6 @@ set(SOURCES
   src/tuning/configurations.cpp
 )
 set(HEADERS  # such that they can be discovered by IDEs such as CLion and Visual Studio
-  deps/nlohmann_json.hpp
   include/clblast_half.h
   src/database/apple_cpu_fallback.hpp
   src/database/database.hpp
