@@ -99,8 +99,10 @@ void PrintTimingsToFileAsJSON(const std::string& filename, const Device& device,
 
   auto json_dump = json.dump(2);
 
-  fprintf(file, "%s", json_dump.c_str());
-  fclose(file);
+  if (file != nullptr) {
+    fprintf(file, "%s", json_dump.c_str());
+    fclose(file);
+  }
 }
 
 // =================================================================================================
