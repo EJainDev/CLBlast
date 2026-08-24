@@ -20,6 +20,8 @@
 #include <iomanip>
 #include <ios>
 #include <mutex>
+#include <nlohmann/json.hpp>
+#include <nlohmann/json_fwd.hpp>
 #include <random>
 #include <ratio>
 #include <sstream>
@@ -29,7 +31,6 @@
 #include <utility>
 #include <vector>
 
-#include "../../deps/nlohmann_json.hpp"
 #include "tuning/configurations.hpp"
 #include "utilities/backend.hpp"
 #include "utilities/clblast_exceptions.hpp"

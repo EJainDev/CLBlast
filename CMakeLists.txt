@@ -9,8 +9,7 @@
 #
 # ==================================================================================================
 
-# Technically the minimum is 2.8.11 but to be compatible with CMake 4 this is set to 3.10
-cmake_minimum_required(VERSION 3.10)
+cmake_minimum_required(VERSION 3.11)
 
 # Overrides for MSVC static runtime
 option(OVERRIDE_MSVC_FLAGS_TO_MT "Override compiler flags for MSVC to build with a static runtime (/MT instead of /MD)" ON)
@@ -411,6 +410,14 @@ endif()
 # This section contains all the code related to the tuners
 if(TUNERS)
 
+  include(FetchContent)
+
+  FetchContent_Declare(nlohmann_json
+    GIT_REPOSITORY https://github.com/nlohmann/json
+    GIT_TAG v3.12.0
+  )
+  FetchContent_MakeAvailable(nlohmann_json)
+
   set(TUNERS_COMMON
       src/utilities/compile.cpp
       src/utilities/clblast_exceptions.cpp
@@ -434,8 +441,9 @@ if(TUNERS)
   if(MSVC)
     # Visual Studio requires the sources of non-exported objects/libraries
   else()
-    # Creates the common performance-tests objects (requires CMake 2.8.8)
+    # Creates the common performance-tests objects
     add_library(tuners_common_library OBJECT ${TUNERS_COMMON})
+    target_link_libraries(tuners_common_library nlohmann_json::nlohmann_json)
 
     # Adds CLBlast's interface include paths because we can't link to CLBlast here
     target_include_directories(tuners_common_library PRIVATE
@@ -448,7 +456,7 @@ if(TUNERS)
   set(ALLKERNELS ${KERNELS})
   foreach(KERNEL ${ALLKERNELS})
     add_executable(clblast_tuner_${KERNEL} ${TUNERS_COMMON} src/tuning/kernels/${KERNEL}.cpp)
-    target_link_libraries(clblast_tuner_${KERNEL} ${API_LIBRARIES})
+    target_link_libraries(clblast_tuner_${KERNEL} ${API_LIBRARIES} nlohmann_json::nlohmann_json)
     target_include_directories(clblast_tuner_${KERNEL} PUBLIC $<TARGET_PROPERTY:clblast,INTERFACE_INCLUDE_DIRECTORIES> ${API_INCLUDE_DIRS})
     install(TARGETS clblast_tuner_${KERNEL} DESTINATION bin)
   endforeach()
@@ -456,7 +464,7 @@ if(TUNERS)
     foreach(ROUTINE_TUNER ${ROUTINE_TUNERS})
       add_executable(clblast_tuner_routine_${ROUTINE_TUNER} ${TUNERS_COMMON} src/tuning/routines/${ROUTINE_TUNER}.cpp test/test_utilities.cpp)
       target_link_libraries(clblast_tuner_routine_${ROUTINE_TUNER} clblast)
-      target_include_directories(clblast_tuner_routine_${ROUTINE_TUNER} PUBLIC $<TARGET_PROPERTY:clblast,INTERFACE_INCLUDE_DIRECTORIES> ${API_INCLUDE_DIRS} ${clblast_SOURCE_DIR})
+      target_include_directories(clblast_tuner_routine_${ROUTINE_TUNER} PUBLIC $<TARGET_PROPERTY:clblast,INTERFACE_INCLUDE_DIRECTORIES> ${API_INCLUDE_DIRS} ${clblast_SOURCE_DIR} nlohmann_json::nlohmann_json)
       install(TARGETS clblast_tuner_routine_${ROUTINE_TUNER} DESTINATION bin)
     endforeach()
   endif()
