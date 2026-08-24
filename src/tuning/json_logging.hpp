@@ -4,12 +4,13 @@
 #include <fstream>
 #include <iomanip>
 #include <ios>
+#include <nlohmann/json.hpp>
+#include <nlohmann/json_fwd.hpp>
 #include <sstream>
 #include <string>
 #include <utility>
 #include <vector>
 
-#include "../../deps/nlohmann_json.hpp"
 #include "tuning/tuning.hpp"
 #include "utilities/backend.hpp"
 #include "utilities/utilities.hpp"
