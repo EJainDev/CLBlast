@@ -117,16 +117,6 @@ class JSONLogger {
     }
   }
 
-  void remove_existing_configs(std::vector<Configuration>& configs) {
-    const auto remove_el = std::remove_if(configs.begin(), configs.end(),
-                                          [&](const Configuration& c) { return configs_.find(c) != configs_.end(); });
-    if (remove_el != configs.end()) {
-      printf("* Removing %zu configuration(s) that have already been tested\n",
-             std::distance(remove_el, configs.end()));
-      configs.erase(remove_el, configs.end());
-    }
-  }
-
   void add_tuning_result(const TuningResult& result) {
     if (!has_result_) {
       file_.seekp(-(sizeof("]}") - 1), std::ios::end);
@@ -174,11 +164,29 @@ class JSONLogger {
 
   ~JSONLogger() { file_.close(); }
 
+  const std::set<Configuration>& configs() const { return configs_; }
+
  private:
   bool has_result_ = false;
   std::fstream file_;
   std::set<Configuration> configs_;
 };
+
+/**
+ * @brief Removes configurations that have already been tested from the list of configurations to be tested.
+ *
+ * @param configs The current configurations to be tested
+ * @param logger The logger containing the previously tested configurations (maybe 0)
+ */
+void remove_existing_configs(std::vector<Configuration>& configs, const JSONLogger& logger) {
+  const auto remove_el = std::remove_if(configs.begin(), configs.end(), [&](const Configuration& c) {
+    return logger.configs().find(c) != logger.configs().end();
+  });
+  if (remove_el != configs.end()) {
+    printf("* Removing %zu configuration(s) that have already been tested\n", std::distance(remove_el, configs.end()));
+    configs.erase(remove_el, configs.end());
+  }
+}
 }  // namespace clblast
 
 // CLBLAST_TUNING_JSON_LOGGING_H_

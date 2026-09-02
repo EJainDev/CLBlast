@@ -388,7 +388,7 @@ void Tuner(int argc, char* argv[], const int V, GetTunerDefaultsFunc GetTunerDef
   for (auto& configuration : configurations) {
     configuration["PRECISION"] = static_cast<size_t>(args.precision);
   }
-  logger.remove_existing_configs(configurations);
+  remove_existing_configs(configurations, logger);
   printf("* Found %s%zu configuration(s)%s\n", kPrintMessage.c_str(), configurations.size(), kPrintEnd.c_str());
 
   // Select the search method (full search or a random fraction)
