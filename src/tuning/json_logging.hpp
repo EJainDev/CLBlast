@@ -27,6 +27,12 @@
  */
 
 namespace clblast {
+void reset_file(std::fstream& f) {
+  f.seekp(0, std::ios::beg);
+  f.clear();
+  f.seekp(0, std::ios::beg);
+}
+
 class JSONLogger {
  public:
   JSONLogger(const std::string& filename, const Device& device, const Platform& platform,
@@ -98,9 +104,7 @@ class JSONLogger {
               "* WARNING: Currently loaded JSON file does not match the current device and platform. Overwriting the "
               "existing file.\n");
         }
-        file_.seekp(0, std::ios::beg);
-        file_.clear();
-        file_.seekp(0, std::ios::beg);
+        reset_file(file_);
 
         file_ << json.dump();
         file_.flush();
@@ -108,9 +112,7 @@ class JSONLogger {
     } catch (nlohmann::json::out_of_range&) {
       printf("* WARNING: Invalid JSON file found. Overwriting the existing file.\n");
 
-      file_.seekp(0, std::ios::beg);
-      file_.clear();
-      file_.seekp(0, std::ios::beg);
+      reset_file(file_);
 
       file_ << json.dump();
       file_.flush();
