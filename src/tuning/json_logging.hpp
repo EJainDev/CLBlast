@@ -11,6 +11,7 @@
 #include <nlohmann/json_fwd.hpp>
 #include <set>
 #include <sstream>
+#include <stdexcept>
 #include <string>
 #include <utility>
 #include <vector>
@@ -19,12 +20,6 @@
 #include "tuning/tuning.hpp"
 #include "utilities/backend.hpp"
 #include "utilities/utilities.hpp"
-
-/**
- * best_kernel
- * best_time
- * best_parameters
- */
 
 namespace clblast {
 void reset_file(std::fstream& f) {
@@ -65,19 +60,25 @@ class JSONLogger {
     json["device_extra_info"] = device.GetExtraInfo().c_str();
     json["results"] = nlohmann::json::array();
 
-    resume = true;
-
     try {
-      if (resume && !old_json.empty() && json["clblast_device_type"] == old_json.at("clblast_device_type") &&
-          json["clblast_device_vendor"] == old_json.at("clblast_device_vendor") &&
-          json["clblast_device_architecture"] == old_json.at("clblast_device_architecture") &&
-          json["clblast_device_name"] == old_json.at("clblast_device_name") &&
-          json["device"] == old_json.at("device") && json["platform_vendor"] == old_json.at("platform_vendor") &&
-          json["platform_version"] == old_json.at("platform_version") &&
-          json["device_vendor"] == old_json.at("device_vendor") && json["device_type"] == old_json.at("device_type") &&
-          json["device_core_clock"] == old_json.at("device_core_clock") &&
-          json["device_compute_units"] == old_json.at("device_compute_units") &&
-          json["device_extra_info"] == old_json.at("device_extra_info")) {
+      bool is_same;
+      if (old_json.empty()) {
+        is_same = false;
+      } else {
+        is_same = true;
+        for (const auto& key_val : json.items()) {
+          if (key_val.key() == "results" || key_val.key().compare(0, 4, "best") != 0) {
+            continue;
+          }
+          if (!old_json.contains(key_val.key()) || old_json.at(key_val.key()) != key_val.value()) {
+            printf("* WARNING: Key '%s' has changed from '%s' to '%s'\n", key_val.key().c_str(),
+                   old_json.at(key_val.key()).dump().c_str(), key_val.value().dump().c_str());
+            is_same = false;
+            break;
+          }
+        }
+      }
+      if (resume && !old_json.empty() && is_same) {
         printf("* Resuming from previous tuner run\n");
 
         file_.close();
@@ -96,13 +97,16 @@ class JSONLogger {
           old_json["results"] = nlohmann::json::array();
         }
 
-        file_ << old_json.dump();  // Remove pretty-print for compatibility below
+        // Pretty print is removed here as adding a tuning result removes a specific set of
+        // characters, "]}", and pretty print would break this EOF.
+        file_ << old_json.dump();
         file_.flush();
       } else {
         if (resume) {
-          printf(
-              "* WARNING: Currently loaded JSON file does not match the current device and platform. Overwriting the "
-              "existing file.\n");
+          std::string msg =
+              "Error: Currently loaded JSON file does not match the current device and platform. Aborting!";
+          printf("* %s\n", msg.c_str());
+          throw std::runtime_error(msg);
         }
         reset_file(file_);
 
@@ -110,12 +114,9 @@ class JSONLogger {
         file_.flush();
       }
     } catch (nlohmann::json::out_of_range&) {
-      printf("* WARNING: Invalid JSON file found. Overwriting the existing file.\n");
-
-      reset_file(file_);
-
-      file_ << json.dump();
-      file_.flush();
+      std::string msg = "Error: Invalid JSON file found for resume. Aborting!";
+      printf("* %s\n", msg.c_str());
+      throw;
     }
   }
 
