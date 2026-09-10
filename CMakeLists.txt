@@ -9,7 +9,7 @@
 #
 # ==================================================================================================
 
-cmake_minimum_required(VERSION 3.11)
+cmake_minimum_required(VERSION 3.14)
 
 # Overrides for MSVC static runtime
 option(OVERRIDE_MSVC_FLAGS_TO_MT "Override compiler flags for MSVC to build with a static runtime (/MT instead of /MD)" ON)

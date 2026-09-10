@@ -66,7 +66,7 @@ class JSONLogger {
       } else {
         is_same = true;
         for (const auto& key_val : json.items()) {
-          if (key_val.key() == "results" || key_val.key().compare(0, 4, "best") != 0) {
+          if (key_val.key() == "results" || key_val.key().compare(0, 4, "best") == 0) {
             continue;
           }
           if (!old_json.contains(key_val.key()) || old_json.at(key_val.key()) != key_val.value()) {
