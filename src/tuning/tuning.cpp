@@ -382,7 +382,7 @@ void Tuner(int argc, char* argv[], const int V, GetTunerDefaultsFunc GetTunerDef
   }
 
   JSONLogger logger{"clblast_" + settings.kernel_family + "_" + precision_string + ".json", device, platform, metadata,
-                    args.resume};
+                    args.resume == 1};
 
   // Sets the tunable parameters and their possible values
   auto configurations = SetConfigurations(device, settings.parameters, settings.local_size, settings.mul_local,
