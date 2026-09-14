@@ -266,7 +266,7 @@ struct Arguments {
   bool print_help = false;
   bool silent = false;
   bool no_abbrv = false;
-  bool resume = false;
+  int resume = 0;
 };
 
 // =================================================================================================
