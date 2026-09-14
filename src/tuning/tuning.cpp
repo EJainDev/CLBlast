@@ -281,6 +281,9 @@ void Tuner(int argc, char* argv[], const int V, GetTunerDefaultsFunc GetTunerDef
   if (args.fraction < 1) {
     printf("The fraction parameter passed must be greater than 1. Qutting...\n");
     return;
+  } else if (args.resume != 0 && args.resume != 1) {
+    printf("The resume parameter must either be 0 (default off) or 1 (on).\n");
+    return;
   }
 
   args.num_runs = GetArgument(command_line_args, help, kArgNumRuns, defaults.default_num_runs);

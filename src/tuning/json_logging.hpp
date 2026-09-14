@@ -37,6 +37,11 @@ class JSONLogger {
       file_ = std::fstream(filename, std::ios::out | std::ios::trunc | std::ios::in);
     } else {
       file_ = std::fstream(filename, std::ios::out | std::ios::in);
+      if (!file_.good()) {
+        std::string msg = "Error: Could not open JSON file for resume. Aborting!";
+        printf("* %s\n", msg.c_str());
+        throw std::runtime_error(msg);
+      }
       old_json = nlohmann::ordered_json::parse(file_);
     }
 
